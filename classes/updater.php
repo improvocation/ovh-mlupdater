@@ -51,9 +51,9 @@ class Updater{
 	}
 	
 	private function updateDestination($dest,$sources){
-		#$timestamp = file_get_contents($this->cacheFolder.'/'.$dest.'.last-dest-update');
+		$timestamp = @file_get_contents($this->cacheFolder.'/'.$dest.'.last-dest-update');
 		
-		if( true ){ #time() - $timestamp > Updater::$DEST_UPDATE_LIFESPAN){
+		if( time() - $timestamp > Updater::$DEST_UPDATE_LIFESPAN){
 			$this->logger->log('Updating destination : "'.$dest.'".');
 			foreach($sources as $source){
 				$this->logger->log('Updating "'.$dest.'" with source "'.$source.'".');
@@ -61,7 +61,6 @@ class Updater{
 				$data = $cf->getData();
 				$c = 0;
 				foreach($data as $address){
-//					echo "\n -- ".$address;
 					$c++;
 					$this->addMemberToList($dest,$address);
 				}
@@ -69,7 +68,7 @@ class Updater{
 			}
 		}
 			
-		#file_put_contents($this->cacheFolder.'/'.$dest.'.last-dest-update',time());
+		file_put_contents($this->cacheFolder.'/'.$dest.'.last-dest-update',time());
 		
 	}
 	
