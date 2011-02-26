@@ -34,6 +34,15 @@ class Updater{
 			$this->updateDestination($d,$sources);
 					
 	}
+
+	public function addToList($addresses,$list){
+		$this->ensureConnected();
+		
+		$this->logger->log('Adding to list...');
+		foreach($addresses as $mail)
+			$this->addMemberToList($list,$mail);
+		$this->logger->log('Adding finished.');
+	}
 	
 	private function updateSourceCache($source){
 		$timestamp = @file_get_contents($this->cacheFolder.'/'.$source.'.last-fetch');
@@ -73,11 +82,13 @@ class Updater{
 	}
 	
 	private function addMemberToList($list,$address){
+		//$this->logger->log('Soap request: "mailingListSubscriberAdd"');
 		$this->soap->mailingListSubscriberAdd(
 				$this->session, 
 		 		$this->domain, 
 				$list, 
 				$address);
+		//$this->logger->log('Soap request finished.');
 	}
 	
 	private function retreiveMembersList($source){
@@ -97,10 +108,12 @@ class Updater{
 	}
 	
 	private function connect(){
+		$this->logger->log('Connecting...');
 		try{
 			$this->soap = new SoapClient("https://www.ovh.com/soapi/soapi-re-1.12.wsdl");
 			$this->session = $this->soap->login($this->username, $this->password,"en", false);
 			$this->connected = true;
+			$this->logger->log('Connected.');
 		}catch(SoapFault $fault) {
 			$this->logger->log("Connection failed : ".$fault);
 			$this->connected = false;
