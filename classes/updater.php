@@ -11,6 +11,7 @@ class Updater{
 	private $cacheFolder;
 	private $soap;
 	private $connected = false;
+	private $exceptions = Array();
 	private static $CACHE_FOLDER_NAME = 'cache';
 	private static $CACHE_LIFESPAN = 86300; // a bit less than day
 	private static $DEST_UPDATE_LIFESPAN = 86300; // a it less than day
@@ -42,6 +43,10 @@ class Updater{
 		foreach($addresses as $mail)
 			$this->addMemberToList($list,$mail);
 		$this->logger->log('Adding finished.');
+	}
+	
+	public function getExceptions(){
+		return $exceptions;
 	}
 	
 	private function updateSourceCache($source){
@@ -89,23 +94,31 @@ class Updater{
 	
 	private function addMemberToList($list,$address){
 		$this->logger->log('Soap request: mailingListSubscriberAdd('.$this->session.','.$this->domain.','.$list.','.$address.')','debug');
-				
-		$this->soap->mailingListSubscriberAdd(
-				$this->session, 
-		 		$this->domain, 
-				$list, 
-				$address);
+		try{				
+			$this->soap->mailingListSubscriberAdd(
+					$this->session, 
+					$this->domain, 
+					$list, 
+					$address);
+		}catch(SoapFault $fault) {
+			$this->exceptions[] = $fault;
+		}
 		//$this->logger->log('Soap request finished.');
 	}
 	
 	private function retreiveMembersList($source){
 		$this->logger->log('Soap request: mailingListSubscriberList('.$this->session.','.$this->domain.','.$source.')','debug');
-		 $result = $this->soap->mailingListSubscriberList(
-		 	$this->session, 
-		 	$this->domain, 
-		 	$source);
+		$result = false;
+		try{
+			$result = $this->soap->mailingListSubscriberList(
+				$this->session, 
+				$this->domain, 
+				$source);
+		}catch(SoapFault $fault) {
+			$this->exceptions[] = $fault;
+		}
 		 	
-		 return $result;
+		return $result;
 		
 	}
 
