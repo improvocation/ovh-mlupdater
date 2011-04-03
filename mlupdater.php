@@ -32,15 +32,25 @@ foreach($config->g('Transfers') as $transfer){
 		$updater->update($transfer['origins'],$transfer['destinations']);
 	}catch(Exception $e){
 		$log->log("Caught exception !");
-		$str="\nFailed with exception:";
-		$str.="\n".$e->getTraceAsString();
+		handleExceptions(array($e));
 		$log->log($str);
-		if($sendmails){
-			$log->log('Sending mail...');
-			$str.="\n\nLast error:\n".print_r(error_get_last(),1)."\n\nBacktrace:\n".print_r(debug_backtrace(),1);
-			smtp_mail('admin@impro-vocation.org','Failure on improvoc mlupdater',$str,"From: admin@impro-vocation.org\r\n");
-		}
 	}
+	handleExceptions($updater->getExceptions());
 }
 
-
+function handleExceptions($exceptionsArray){
+	if(!count($exceptionsArray))
+		return;
+		
+	$str = '';
+	foreach($exceptionsArray as $e){
+		$str.="\nFailed with exception:";
+		$str.="\n".$e->getTraceAsString();
+	}
+	$log->log($str);
+	if($sendmails){
+		$log->log('Sending mail...');
+		$str.="\n\nLast error:\n".print_r(error_get_last(),1)."\n\nBacktrace:\n".print_r(debug_backtrace(),1);
+		smtp_mail('admin@impro-vocation.org','Failure on improvoc mlupdater',$str,"From: admin@impro-vocation.org\r\n");
+	}
+}
