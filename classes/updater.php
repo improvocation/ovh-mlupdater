@@ -78,6 +78,10 @@ class Updater{
 
 		if( time() - $timestamp > Updater::$DEST_UPDATE_LIFESPAN  || $this->force){
 			$this->logger->log('Updating destination : "'.$dest.'".');
+			
+			$this->logger->log('Retrieving list from destination '.$dest.'. ','debug');
+			$destlist = $this->retreiveMembersList($dest);
+			
 			foreach($sources as $source){
 				$this->logger->log('Updating "'.$dest.'" with source "'.$source.'".');
 				$cf = new Config($this->cacheFolder.'/'.$source.'.yml',$this->logger);
@@ -88,12 +92,17 @@ class Updater{
 				
 				$c = 0;
 				foreach($data as $address){
-					$op=$this->addMemberToList($dest,$address);
-					if( -5 == $op ){
-						$this->logger->log("operation in progress on mailing-list. Stopping.");
-						return;
+					if( ! in_array($address,$destlist) ){
+						$this->logger->log('Adding '.$address.' (not in '.$dest.') ','debug');
+						$op=$this->addMemberToList($dest,$address);
+						if( -5 == $op ){
+							$this->logger->log("operation in progress on mailing-list. Stopping.");
+							return;
+						}else{
+							$c+=$op;		
+						}
 					}else{
-						$c+=$op;		
+						$this->logger->log('Not adding '.$address.' (already in '.$dest.') ','debug');
 					}
 				}
 				$this->logger->log('Added '.$c.' mails to "'.$dest.'" from source "'.$source.'".');
