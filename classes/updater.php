@@ -12,16 +12,20 @@ class Updater{
 	private $soap;
 	private $connected = false;
 	private $exceptions = Array();
+	private $force = false;
 	private static $CACHE_FOLDER_NAME = 'cache';
 	private static $CACHE_LIFESPAN = 86300; // a bit less than day
 	private static $DEST_UPDATE_LIFESPAN = 86300; // a it less than day
+
+	private static $ML_OP_IN_PROGRESS = 'soap:211';
+
 	
-	public function __construct($domain,$username,$password,Logger $logger,$rootfolder){
+	public function __construct($domain,$username,$password,Logger $logger,$rootfolder,$force=false){
 		$this->domain = $domain;
 		$this->username = $username;
 		$this->password = $password;
 		$this->logger = $logger;
-		
+		$this->force = $force;
 		$this->cacheFolder = $rootfolder.'/'.Updater::$CACHE_FOLDER_NAME.'/';
 	}
 	
@@ -46,14 +50,14 @@ class Updater{
 	}
 	
 	public function getExceptions(){
-		return $exceptions;
+		return $this->exceptions;
 	}
 	
 	private function updateSourceCache($source){
 		$this->logger->log('Updating source cache for '.$source,'debug');
 		$timestamp = @file_get_contents($this->cacheFolder.'/'.$source.'.last-fetch');
 		
-		if( time() - $timestamp > Updater::$CACHE_LIFESPAN){
+		if( time() - $timestamp > Updater::$CACHE_LIFESPAN || $this->force){
 			$this->logger->log('Refreshing cached list of "'.$source.'"');
 			$list = $this->retreiveMembersList($source);
 			$this->logger->log('New list has '.count($list).' entries.');
@@ -71,16 +75,26 @@ class Updater{
 		$this->logger->log('Updating destination '.$dest.' with sources '.implode('; ',$sources),'debug');
 		$timestamp = @file_get_contents($this->cacheFolder.'/'.$dest.'.last-dest-update');
 		
-		if( time() - $timestamp > Updater::$DEST_UPDATE_LIFESPAN){
+
+		if( time() - $timestamp > Updater::$DEST_UPDATE_LIFESPAN  || $this->force){
 			$this->logger->log('Updating destination : "'.$dest.'".');
 			foreach($sources as $source){
 				$this->logger->log('Updating "'.$dest.'" with source "'.$source.'".');
 				$cf = new Config($this->cacheFolder.'/'.$source.'.yml',$this->logger);
+				
 				$data = $cf->getData();
+				// give everybody a chance to be first :)
+				shuffle($data);
+				
 				$c = 0;
 				foreach($data as $address){
-					$c++;
-					$this->addMemberToList($dest,$address);
+					$op=$this->addMemberToList($dest,$address);
+					if( -5 == $op ){
+						$this->logger->log("operation in progress on mailing-list. Stopping.");
+						return;
+					}else{
+						$c+=$op;		
+					}
 				}
 				$this->logger->log('Added '.$c.' mails to "'.$dest.'" from source "'.$source.'".');
 			}
@@ -102,8 +116,19 @@ class Updater{
 					$address);
 		}catch(SoapFault $fault) {
 			$this->exceptions[] = $fault;
+			$this->logger->log("Exception:".$fault->faultstring,'debug');
+			$this->logger->log("Code:[".$fault->faultcode.']','debug');
+			if($fault->faultcode == Updater::$ML_OP_IN_PROGRESS){
+				$this->logger->log('Waiting 50 seconds for task to finish on server....','debug');
+				sleep(50);
+				return -5;	
+			}
+			return 0;
 		}
-		//$this->logger->log('Soap request finished.');
+		$this->logger->log('Waiting 50 seconds for task to finish on server....','debug');
+		sleep(50);
+		$this->logger->log('Soap request finished.','debug');
+		return 1;
 	}
 	
 	private function retreiveMembersList($source){
@@ -116,6 +141,7 @@ class Updater{
 				$source);
 		}catch(SoapFault $fault) {
 			$this->exceptions[] = $fault;
+			$this->logger->log("Exception:".$fault->faultstring,'debug');
 		}
 		 	
 		return $result;

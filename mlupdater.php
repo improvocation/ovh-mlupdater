@@ -13,6 +13,7 @@ $log->log("Starting.");
 $log->setDebug(in_array('debug',$argv));
 
 $sendmails = !in_array('nomail',$argv);
+$force = in_array('force',$argv);
 
 $config = new Config($config_file,$log);
 
@@ -22,7 +23,8 @@ $updater = new Updater(
 	$config->g('Config.username'),
 	$config->g('Config.password'),
 	$log,
-	dirname(__FILE__)
+	dirname(__FILE__),
+	$force
 	);
 
 
@@ -35,18 +37,23 @@ foreach($config->g('Transfers') as $transfer){
 		handleExceptions(array($e));
 		$log->log($str);
 	}
+	$log->log("Handling exceptions...");
 	handleExceptions($updater->getExceptions());
 }
 
 function handleExceptions($exceptionsArray){
+	global $log;
+
 	if(!count($exceptionsArray))
 		return;
 		
 	$str = '';
 	foreach($exceptionsArray as $e){
 		$str.="\nFailed with exception:";
+		$str.="\n".$e->getMessage();
 		$str.="\n".$e->getTraceAsString();
 	}
+
 	$log->log($str);
 	if($sendmails){
 		$log->log('Sending mail...');
