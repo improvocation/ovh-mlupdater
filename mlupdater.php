@@ -10,6 +10,9 @@ require_once('classes/updater.php');
 
 $log = new Logger();
 $log->log("Starting.");
+$log->setDebug(in_array('debug',$argv));
+
+$sendmails = !in_array('nomail',$argv);
 
 $config = new Config($config_file,$log);
 
@@ -28,12 +31,15 @@ foreach($config->g('Transfers') as $transfer){
 	try{
 		$updater->update($transfer['origins'],$transfer['destinations']);
 	}catch(Exception $e){
-		$log->log("Caught exception ! Sending mail.");
+		$log->log("Caught exception !");
 		$str="\nFailed with exception:";
 		$str.="\n".$e->getTraceAsString();
 		$log->log($str);
-		$str.="\n\nLast error:\n".print_r(error_get_last(),1)."\n\nBacktrace:\n".print_r(debug_backtrace(),1);
-		smtp_mail('admin@impro-vocation.org','Failure on improvoc mlupdater',$str,"From: admin@impro-vocation.org\r\n");
+		if($sendmails){
+			$log->log('Sending mail...');
+			$str.="\n\nLast error:\n".print_r(error_get_last(),1)."\n\nBacktrace:\n".print_r(debug_backtrace(),1);
+			smtp_mail('admin@impro-vocation.org','Failure on improvoc mlupdater',$str,"From: admin@impro-vocation.org\r\n");
+		}
 	}
 }
 

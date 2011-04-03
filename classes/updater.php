@@ -45,6 +45,7 @@ class Updater{
 	}
 	
 	private function updateSourceCache($source){
+		$this->logger->log('Updating source cache for '.$source,'debug');
 		$timestamp = @file_get_contents($this->cacheFolder.'/'.$source.'.last-fetch');
 		
 		if( time() - $timestamp > Updater::$CACHE_LIFESPAN){
@@ -56,10 +57,13 @@ class Updater{
 			$cf->dump();
 			
 			file_put_contents($this->cacheFolder.'/'.$source.'.last-fetch',time());
+		}else{
+			$this->logger->log('Not updating source, last update is recent enough.','debug');
 		}
 	}
 	
 	private function updateDestination($dest,$sources){
+		$this->logger->log('Updating destination '.$dest.' with sources '.implode('; ',$sources),'debug');
 		$timestamp = @file_get_contents($this->cacheFolder.'/'.$dest.'.last-dest-update');
 		
 		if( time() - $timestamp > Updater::$DEST_UPDATE_LIFESPAN){
@@ -75,6 +79,8 @@ class Updater{
 				}
 				$this->logger->log('Added '.$c.' mails to "'.$dest.'" from source "'.$source.'".');
 			}
+		}else{
+			$this->logger->log('Not updating destination, last update is recent enough.','debug');
 		}
 			
 		file_put_contents($this->cacheFolder.'/'.$dest.'.last-dest-update',time());
@@ -82,7 +88,8 @@ class Updater{
 	}
 	
 	private function addMemberToList($list,$address){
-		//$this->logger->log('Soap request: "mailingListSubscriberAdd"');
+		$this->logger->log('Soap request: mailingListSubscriberAdd('.$this->session.','.$this->domain.','.$list.','.$address.')','debug');
+				
 		$this->soap->mailingListSubscriberAdd(
 				$this->session, 
 		 		$this->domain, 
@@ -92,6 +99,7 @@ class Updater{
 	}
 	
 	private function retreiveMembersList($source){
+		$this->logger->log('Soap request: mailingListSubscriberList('.$this->session.','.$this->domain.','.$source.')','debug');
 		 $result = $this->soap->mailingListSubscriberList(
 		 	$this->session, 
 		 	$this->domain, 
