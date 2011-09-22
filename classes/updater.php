@@ -14,8 +14,8 @@ class Updater{
 	private $exceptions = Array();
 	private $force = false;
 	private static $CACHE_FOLDER_NAME = 'cache';
-	private static $CACHE_LIFESPAN = 86300; // a bit less than day
-	private static $DEST_UPDATE_LIFESPAN = 86300; // a it less than day
+	private static $CACHE_LIFESPAN = 14000; // a bit less than 4 hours
+	private static $DEST_UPDATE_LIFESPAN = 14000; // a it less than 4 hours
 
 	private static $ML_OP_IN_PROGRESS = 'soap:211';
 
@@ -43,10 +43,20 @@ class Updater{
 	public function addToList($addresses,$list){
 		$this->ensureConnected();
 		
-		$this->logger->log('Adding to list...');
-		foreach($addresses as $mail)
-			$this->addMemberToList($list,$mail);
-		$this->logger->log('Adding finished.');
+		$this->logger->log('Adding to list '.count($addresses).' addresses...');
+		
+		$this->logger->log("Checking for duplicates in the ".count($addresses)."...");
+		$destlist = $this->retreiveMembersList($list);
+		if($destlist){
+			$addresses = array_diff($addresses,$destlist);
+			
+			$this->logger->log("Really adding ".count($addresses)." mails...");
+			foreach($addresses as $mail)
+				$this->addMemberToList($list,$mail);
+			$this->logger->log('Adding finished.');
+		}else{
+			$this->logger->log('Could not add new addresses: unable to load existing address list.');
+		}
 	}
 	
 	public function getExceptions(){
