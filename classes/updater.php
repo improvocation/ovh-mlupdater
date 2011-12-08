@@ -40,6 +40,25 @@ class Updater{
 					
 	}
 
+	public function removeFromList($addresses,$list){
+                $this->ensureConnected();
+
+                $this->logger->log('Removing from list '.count($addresses).' addresses...');
+
+                $this->logger->log("Checking for the addresses really present in the list in the ".count($addresses)."...");
+                $destlist = $this->retreiveMembersList($list);
+                if($destlist){
+                        $addresses = array_intersect($addresses,$destlist);
+
+                        $this->logger->log("Really removing ".count($addresses)." mails...");
+                        foreach($addresses as $mail)
+                                $this->removeMemberFromList($list,$mail);
+                        $this->logger->log('removing finished.');
+                }else{
+                        $this->logger->log('Could not remove addresses: unable to load existing address list.');
+                }
+	}
+
 	public function addToList($addresses,$list){
 		$this->ensureConnected();
 		
@@ -125,6 +144,31 @@ class Updater{
 		
 	}
 	
+	private function removeMemberFromList($list,$address){
+                $this->logger->log('Soap request: mailingListSubscriberDel('.$this->session.','.$this->domain.','.$list.','.$address.')','debug');
+                try{
+                        $this->soap->mailingListSubscriberDel(
+                                        $this->session,
+                                        $this->domain,
+                                        $list,
+                                        $address);
+                }catch(SoapFault $fault) {
+                        $this->exceptions[] = $fault;
+                        $this->logger->log("Exception:".$fault->faultstring,'debug');
+                        $this->logger->log("Code:[".$fault->faultcode.']','debug');
+                        if($fault->faultcode == Updater::$ML_OP_IN_PROGRESS){
+                                $this->logger->log('Waiting 50 seconds for task to finish on server....','debug');
+                                sleep(50);
+                                return -5;
+                        }
+                        return 0;
+                }
+                $this->logger->log('Waiting 50 seconds for task to finish on server....','debug');
+                sleep(50);
+                $this->logger->log('Soap request finished.','debug');
+                return 1;
+	}
+
 	private function addMemberToList($list,$address){
 		$this->logger->log('Soap request: mailingListSubscriberAdd('.$this->session.','.$this->domain.','.$list.','.$address.')','debug');
 		try{				

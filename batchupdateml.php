@@ -30,15 +30,25 @@ $updater = new Updater(
 	);
 
 
-if(3 != count($argv)){
-	$log->log("Script requires two arguments: source file and destination mailing list.");
+if(4 != count($argv)){
+	$log->log("Script requires three arguments: operation (add/remove), source file and destination mailing list.");
 	exit();
 }
 
-$source = $argv[1];
-$destination = $argv[2];
+$operation = $argv[1];
+$source = $argv[2];
+$destination = $argv[3];
 
-$log->log("Reading file to add.");
+if($operation == 'remove' || $operation == 'add'){
+  $log->log("I will apply operation: '".$operation."' on list '".$destination."' using '".$source."'");
+}else{
+  $log->log("Invalid operation '".$operation."'. Should be one of 'add' or 'remove'.");
+  exit();
+}
+	
+
+
+$log->log("Reading file to use as input.");
 if(!file_exists($source)){
 	$log->log("Error. File does not exist: $source.");
 	exit();
@@ -48,7 +58,14 @@ $log->log("Cleaning & parsing.");
 $emails=preg_replace('/[ ,;|\s]+/',',',$emails);
 $emails = array_filter(explode(',',$emails));
 
-$log->log("Adding ".count($emails)." e-mails.");
-$updater->addToList($emails,$destination);
+$log->log("Updating ".count($emails)." e-mails.");
+
+if($operation == 'remove')
+	$updater->removeFromList($emails,$destination);
+else if($operation == 'add')
+	$updater->addToList($emails,$destination);
+
 
 $log->log("Done.");
+
+
