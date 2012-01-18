@@ -1,0 +1,4 @@
+h1. OVH ML Updater 
+
+
+OVH ML Updater is a simple PHP script which automates transfers of addresses between OVH mailing-lists. It uses OVH's SOAP API to communicate with the server.
