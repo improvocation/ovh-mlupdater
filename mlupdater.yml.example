@@ -1,0 +1,14 @@
+Config:
+  domain: my-ovh-domain.com  
+  username: xxxxxxx-ovh
+  password: xxxxxxx
+  
+Transfers:
+  - name: Transfer from sub-mails to global mailing
+    origins:
+      - team1
+      - team2
+      - team3
+    destinations:
+      - all-teams
+
