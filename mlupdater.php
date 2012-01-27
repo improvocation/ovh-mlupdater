@@ -56,8 +56,9 @@ function handleExceptions($exceptionsArray){
 
 	$log->log($str);
 	if($sendmails){
+		$mail = $config->g('Config.admin_email');
 		$log->log('Sending mail...');
 		$str.="\n\nLast error:\n".print_r(error_get_last(),1)."\n\nBacktrace:\n".print_r(debug_backtrace(),1);
-		smtp_mail('admin@impro-vocation.org','Failure on improvoc mlupdater',$str,"From: admin@impro-vocation.org\r\n");
+		smtp_mail($mail,'Failure on improvoc mlupdater',$str,"From: "+$mail+"\r\n");
 	}
 }

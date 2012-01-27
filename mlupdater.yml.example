@@ -2,6 +2,7 @@ Config:
   domain: my-ovh-domain.com  
   username: xxxxxxx-ovh
   password: xxxxxxx
+  admin_email: xxxxxx@example.com
   
 Transfers:
   - name: Transfer from sub-mails to global mailing
