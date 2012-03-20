@@ -220,7 +220,7 @@ class Updater{
 	private function connect(){
 		$this->logger->log('Connecting...');
 		try{
-			$this->soap = new SoapClient("https://www.ovh.com/soapi/soapi-re-1.12.wsdl");
+			$this->soap = new SoapClient("https://www.ovh.com/soapi/soapi-re-1.31.wsdl");
 			$this->session = $this->soap->login($this->username, $this->password,"en", false);
 			$this->connected = true;
 			$this->logger->log('Connected.');
